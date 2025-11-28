@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { toFile } from "openai/uploads";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const parseDataUrl = (payload: string) => {
     const match = payload.match(/^data:(.+);base64,(.+)$/);
@@ -23,14 +24,18 @@ export async function POST(request: Request) {
     const client = new OpenAI({ apiKey });
 
     try {
-        const contentType = request.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json"))
-            return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 400 });
-
         let body;
         try {
-            body = await request.json();
+            const contentType = request.headers.get("content-type") || "";
+            if (contentType.includes("application/json")) {
+                body = await request.json();
+            } else {
+                const text = await request.text();
+                body = JSON.parse(text);
+            }
         } catch (err) {
+            if (err instanceof Error)
+                return NextResponse.json({ error: `Invalid request: ${err.message}` }, { status: 400 });
             return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
         }
         const { description, audio } = body;
