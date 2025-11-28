@@ -23,7 +23,17 @@ export async function POST(request: Request) {
     const client = new OpenAI({ apiKey });
 
     try {
-        const { description, audio } = await request.json();
+        const contentType = request.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json"))
+            return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 400 });
+
+        let body;
+        try {
+            body = await request.json();
+        } catch (err) {
+            return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
+        }
+        const { description, audio } = body;
 
         if (typeof description !== "string" || description.trim().length < 12)
             return NextResponse.json({ error: "Description must contain at least 12 characters." }, { status: 400 });
