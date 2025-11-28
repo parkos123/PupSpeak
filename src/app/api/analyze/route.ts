@@ -23,17 +23,15 @@ export async function POST(request: Request) {
     const client = new OpenAI({ apiKey });
 
     try {
-        const formData = await request.formData();
-        const description = formData.get("description");
-        const audioPayload = formData.get("audio");
+        const { description, audio } = await request.json();
 
         if (typeof description !== "string" || description.trim().length < 12)
             return NextResponse.json({ error: "Description must contain at least 12 characters." }, { status: 400 });
 
-        if (typeof audioPayload !== "string")
+        if (typeof audio !== "string")
             return NextResponse.json({ error: "Audio sample missing." }, { status: 400 });
 
-        const { buffer } = parseDataUrl(audioPayload);
+        const { buffer } = parseDataUrl(audio);
         const audioFile = await toFile(buffer, "bark.webm");
 
         const transcription = await client.audio.transcriptions.create({
