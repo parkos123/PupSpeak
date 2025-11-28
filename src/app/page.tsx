@@ -1,17 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import dogLogo from "../../main_dog.png";
 import { MicVocal, Sparkles, Square } from "lucide-react";
 import type { AnalysisResult, RecordingState } from "../types";
 
-const ATTEMPT_KEY = "pupspeak_attempts";
-const REGISTRATION_KEY = "pupspeak_registered";
-
 export default function Home() {
-    const router = useRouter();
     const recorderRef = useRef<MediaRecorder | null>(null);
     const chunkRef = useRef<BlobPart[]>([]);
     const startRef = useRef<number | null>(null);
@@ -21,9 +16,6 @@ export default function Home() {
     const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [isRegistered, setIsRegistered] = useState(false);
-    const [attemptCount, setAttemptCount] = useState(0);
-
     useEffect(() => {
         if (!recording)
             return undefined;
@@ -31,27 +23,6 @@ export default function Home() {
             URL.revokeObjectURL(recording.url);
         };
     }, [recording]);
-
-    useEffect(() => {
-        if (typeof window === "undefined")
-            return;
-        const params = new URLSearchParams(window.location.search);
-        const cameFromRegistration = params.get("registred") === "true";
-        if (cameFromRegistration) {
-            localStorage.setItem(REGISTRATION_KEY, "true");
-            localStorage.removeItem(ATTEMPT_KEY);
-            setIsRegistered(true);
-            setAttemptCount(0);
-        }
-        const storedRegistered = localStorage.getItem(REGISTRATION_KEY) === "true";
-        const storedAttempts = Number(localStorage.getItem(ATTEMPT_KEY) ?? "0");
-        setIsRegistered(storedRegistered);
-        setAttemptCount(Number.isFinite(storedAttempts) ? storedAttempts : 0);
-        requestAnimationFrame(() => {
-            if (cameFromRegistration && window.location.pathname === "/")
-                router.replace("/", { scroll: false });
-        });
-    }, [router]);
 
     useEffect(() => {
         if (!recording)
@@ -137,10 +108,6 @@ export default function Home() {
     const interpretBark = async () => {
         try {
             setError(null);
-            if (!isRegistered && attemptCount >= 2) {
-                window.location.href = "https://pupspeak.eu/register";
-                return;
-            }
             if (!recording)
                 throw new Error("Capture a bark sample first.");
             const trimmed = description.trim();
@@ -166,16 +133,6 @@ export default function Home() {
             if (!result.summary || !Array.isArray(result.alternatives))
                 throw new Error("AI response incomplete.");
             setAnalysis(result);
-            if (!isRegistered) {
-                const nextCount = attemptCount + 1;
-                localStorage.setItem(ATTEMPT_KEY, String(nextCount));
-                setAttemptCount(nextCount);
-                if (nextCount >= 2) {
-                    setTimeout(() => {
-                        window.location.href = "https://pupspeak.eu/register";
-                    }, 500);
-                }
-            }
         } catch (err) {
             if (err instanceof Error)
                 setError(err.message);
