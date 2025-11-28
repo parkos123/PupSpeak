@@ -42,14 +42,13 @@ export default function Home() {
             localStorage.removeItem(ATTEMPT_KEY);
             setIsRegistered(true);
             setAttemptCount(0);
-            if (window.location.pathname === "/")
-                router.replace("/", { scroll: false });
-            return;
         }
         const storedRegistered = localStorage.getItem(REGISTRATION_KEY) === "true";
         const storedAttempts = Number(localStorage.getItem(ATTEMPT_KEY) ?? "0");
         setIsRegistered(storedRegistered);
         setAttemptCount(Number.isFinite(storedAttempts) ? storedAttempts : 0);
+        if (cameFromRegistration && window.location.pathname === "/")
+            router.replace("/", { scroll: false });
     }, [router]);
 
     useEffect(() => {
