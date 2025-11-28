@@ -47,8 +47,10 @@ export default function Home() {
         const storedAttempts = Number(localStorage.getItem(ATTEMPT_KEY) ?? "0");
         setIsRegistered(storedRegistered);
         setAttemptCount(Number.isFinite(storedAttempts) ? storedAttempts : 0);
-        if (cameFromRegistration && window.location.pathname === "/")
-            router.replace("/", { scroll: false });
+        requestAnimationFrame(() => {
+            if (cameFromRegistration && window.location.pathname === "/")
+                router.replace("/", { scroll: false });
+        });
     }, [router]);
 
     useEffect(() => {
@@ -168,6 +170,11 @@ export default function Home() {
                 const nextCount = attemptCount + 1;
                 localStorage.setItem(ATTEMPT_KEY, String(nextCount));
                 setAttemptCount(nextCount);
+                if (nextCount >= 2) {
+                    setTimeout(() => {
+                        window.location.href = "https://pupspeak.eu/register";
+                    }, 500);
+                }
             }
         } catch (err) {
             if (err instanceof Error)
