@@ -26,16 +26,8 @@ export async function POST(request: Request) {
     try {
         let body;
         try {
-            const contentType = request.headers.get("content-type") || "";
-            if (contentType.includes("application/json")) {
-                body = await request.json();
-            } else {
-                const text = await request.text();
-                body = JSON.parse(text);
-            }
+            body = await request.json();
         } catch (err) {
-            if (err instanceof Error)
-                return NextResponse.json({ error: `Invalid request: ${err.message}` }, { status: 400 });
             return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
         }
         const { description, audio } = body;
