@@ -151,12 +151,16 @@ export default function Home() {
             if (trimmed.length < 12)
                 throw new Error("Describe the situation with at least 12 characters.");
             setIsAnalyzing(true);
-            const payload = new FormData();
-            payload.append("description", trimmed);
-            payload.append("audio", await encodeAudio(recording.blob));
+            const payload = {
+                description: trimmed,
+                audio: await encodeAudio(recording.blob),
+            };
             const response = await fetch("/api/analyze", {
                 method: "POST",
-                body: payload,
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
             });
             if (!response.ok) {
                 const message = await response.json().catch(() => ({ error: "Unable to read server response." }));
