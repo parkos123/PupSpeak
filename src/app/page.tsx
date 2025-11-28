@@ -136,14 +136,9 @@ export default function Home() {
     const interpretBark = async () => {
         try {
             setError(null);
-            if (!isRegistered) {
-                if (attemptCount >= 2) {
-                    window.location.href = "https://pupspeak.eu/register";
-                    return;
-                }
-                const nextCount = attemptCount + 1;
-                localStorage.setItem(ATTEMPT_KEY, String(nextCount));
-                setAttemptCount(nextCount);
+            if (!isRegistered && attemptCount >= 2) {
+                window.location.href = "https://pupspeak.eu/register";
+                return;
             }
             if (!recording)
                 throw new Error("Capture a bark sample first.");
@@ -170,6 +165,11 @@ export default function Home() {
             if (!result.summary || !Array.isArray(result.alternatives))
                 throw new Error("AI response incomplete.");
             setAnalysis(result);
+            if (!isRegistered) {
+                const nextCount = attemptCount + 1;
+                localStorage.setItem(ATTEMPT_KEY, String(nextCount));
+                setAttemptCount(nextCount);
+            }
         } catch (err) {
             if (err instanceof Error)
                 setError(err.message);
