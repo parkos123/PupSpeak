@@ -3,7 +3,6 @@ import OpenAI from "openai";
 import { toFile } from "openai/uploads";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 const parseDataUrl = (payload: string) => {
     const match = payload.match(/^data:(.+);base64,(.+)$/);
@@ -24,6 +23,10 @@ export async function POST(request: Request) {
     const client = new OpenAI({ apiKey });
 
     try {
+        const contentType = request.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json"))
+            return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 400 });
+
         let body;
         try {
             body = await request.json();
