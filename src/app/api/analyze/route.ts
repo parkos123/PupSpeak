@@ -4,10 +4,6 @@ import { toFile } from "openai/uploads";
 
 export const runtime = "nodejs";
 
-const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
 const parseDataUrl = (payload: string) => {
     const match = payload.match(/^data:(.+);base64,(.+)$/);
     if (!match)
@@ -20,8 +16,11 @@ const parseDataUrl = (payload: string) => {
 };
 
 export async function POST(request: Request) {
-    if (!process.env.OPENAI_API_KEY)
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey)
         return NextResponse.json({ error: "Missing OpenAI API key." }, { status: 500 });
+
+    const client = new OpenAI({ apiKey });
 
     try {
         const formData = await request.formData();
