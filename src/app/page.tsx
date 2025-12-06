@@ -1,12 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import dogLogo from "../../main_dog.png";
 import { MicVocal, Sparkles, Square } from "lucide-react";
 import type { AnalysisResult, RecordingState } from "../types";
 
+const STORAGE_KEY_REGISTERED = "pupspeak_registered";
+const STORAGE_KEY_ATTEMPTS = "pupspeak_attempts";
+const REGISTRATION_URL = "https://pupspeak.eu/register";
+
 export default function Home() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const recorderRef = useRef<MediaRecorder | null>(null);
     const chunkRef = useRef<BlobPart[]>([]);
     const startRef = useRef<number | null>(null);
@@ -16,6 +23,38 @@ export default function Home() {
     const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === "undefined")
+            return;
+        const registeredParam = searchParams.get("registered");
+        if (registeredParam === "true") {
+            localStorage.setItem(STORAGE_KEY_REGISTERED, "true");
+            const newUrl = window.location.pathname;
+            router.replace(newUrl);
+        }
+    }, [searchParams, router]);
+
+    const isRegistered = () => {
+        if (typeof window === "undefined")
+            return false;
+        return localStorage.getItem(STORAGE_KEY_REGISTERED) === "true";
+    };
+
+    const getAttemptCount = () => {
+        if (typeof window === "undefined")
+            return 0;
+        const stored = localStorage.getItem(STORAGE_KEY_ATTEMPTS);
+        return stored ? parseInt(stored, 10) : 0;
+    };
+
+    const incrementAttemptCount = () => {
+        if (typeof window === "undefined")
+            return;
+        const current = getAttemptCount();
+        localStorage.setItem(STORAGE_KEY_ATTEMPTS, String(current + 1));
+    };
+
     useEffect(() => {
         if (!recording)
             return undefined;
@@ -113,6 +152,15 @@ export default function Home() {
             const trimmed = description.trim();
             if (trimmed.length < 12)
                 throw new Error("Describe the situation with at least 12 characters.");
+
+            const attempts = getAttemptCount();
+            const registered = isRegistered();
+
+            if (attempts >= 1 && !registered) {
+                window.location.href = REGISTRATION_URL;
+                return;
+            }
+
             setIsAnalyzing(true);
             const payload = {
                 description: trimmed,
@@ -133,6 +181,7 @@ export default function Home() {
             if (!result.summary || !Array.isArray(result.alternatives))
                 throw new Error("AI response incomplete.");
             setAnalysis(result);
+            incrementAttemptCount();
         } catch (err) {
             if (err instanceof Error)
                 setError(err.message);
