@@ -16,19 +16,30 @@ const parseDataUrl = (payload: string) => {
 };
 
 export async function POST(request: Request) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey)
-        return NextResponse.json({ error: "Missing OpenAI API key." }, { status: 500 });
-
-    const client = new OpenAI({ apiKey });
-
     try {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey)
+            return NextResponse.json({ error: "Missing OpenAI API key." }, { status: 500 });
+
+        const client = new OpenAI({ apiKey });
+
         let body;
         try {
-            body = await request.json();
+            const contentType = request.headers.get("content-type") || "";
+            if (contentType.includes("application/json")) {
+                body = await request.json();
+            } else {
+                const text = await request.text();
+                if (!text)
+                    return NextResponse.json({ error: "Empty request body" }, { status: 400 });
+                body = JSON.parse(text);
+            }
         } catch (err) {
-            return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
+            if (err instanceof SyntaxError)
+                return NextResponse.json({ error: "Invalid JSON format" }, { status: 400 });
+            return NextResponse.json({ error: `Request parsing failed: ${err instanceof Error ? err.message : "Unknown error"}` }, { status: 400 });
         }
+        
         if (!body || typeof body !== "object")
             return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
         const { description, audio } = body;
@@ -128,8 +139,11 @@ Keep the tone calm, friendly, and actionable. Do not mention AI or JSON. Plain t
             guidance,
         });
     } catch (error) {
-        if (error instanceof Error)
-            return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error("Analyze error:", error);
+        if (error instanceof Error) {
+            const message = error.message || "Unknown error";
+            return NextResponse.json({ error: message, details: error.stack }, { status: 500 });
+        }
         return NextResponse.json({ error: "Failed to analyze bark." }, { status: 500 });
     }
 }
