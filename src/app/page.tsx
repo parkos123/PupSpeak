@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import dogLogo from "../../main_dog.png";
 import { MicVocal, Sparkles, Square } from "lucide-react";
@@ -13,7 +13,6 @@ const REGISTRATION_URL = "https://pupspeak.eu/register";
 
 export default function Home() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const recorderRef = useRef<MediaRecorder | null>(null);
     const chunkRef = useRef<BlobPart[]>([]);
     const startRef = useRef<number | null>(null);
@@ -27,13 +26,14 @@ export default function Home() {
     useEffect(() => {
         if (typeof window === "undefined")
             return;
-        const registeredParam = searchParams.get("registered");
+        const urlParams = new URLSearchParams(window.location.search);
+        const registeredParam = urlParams.get("registered");
         if (registeredParam === "true") {
             localStorage.setItem(STORAGE_KEY_REGISTERED, "true");
             const newUrl = window.location.pathname;
             router.replace(newUrl);
         }
-    }, [searchParams, router]);
+    }, [router]);
 
     const isRegistered = () => {
         if (typeof window === "undefined")
